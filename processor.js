@@ -1,42 +1,54 @@
 import { SuperpoweredWebAudio, SuperpoweredTrackLoader } from './superpowered/SuperpoweredWebAudio.js';
 
-const playersCount = 20;
+const sampleUrls = [
+    "https://tonejs.github.io/audio/salamander/A1.mp3",
+    "https://tonejs.github.io/audio/salamander/C1.mp3",
+    "https://tonejs.github.io/audio/salamander/Ds1.mp3",
+    "https://tonejs.github.io/audio/salamander/Fs1.mp3",
+    "https://tonejs.github.io/audio/salamander/A2.mp3",
+    "https://tonejs.github.io/audio/salamander/C2.mp3",
+    "https://tonejs.github.io/audio/salamander/Ds2.mp3",
+    "https://tonejs.github.io/audio/salamander/Fs2.mp3",
+    "https://tonejs.github.io/audio/salamander/A3.mp3",
+    "https://tonejs.github.io/audio/salamander/C3.mp3",
+    "https://tonejs.github.io/audio/salamander/Ds3.mp3",
+    "https://tonejs.github.io/audio/salamander/Fs3.mp3",
+    "https://tonejs.github.io/audio/salamander/A4.mp3",
+    "https://tonejs.github.io/audio/salamander/C4.mp3",
+    "https://tonejs.github.io/audio/salamander/Ds4.mp3",
+    "https://tonejs.github.io/audio/salamander/Fs4.mp3",
+    "https://tonejs.github.io/audio/salamander/A5.mp3",
+    "https://tonejs.github.io/audio/salamander/C5.mp3",
+    "https://tonejs.github.io/audio/salamander/Ds5.mp3",
+    "https://tonejs.github.io/audio/salamander/Fs5.mp3",
+];
 
 class MyProcessor extends SuperpoweredWebAudio.AudioWorkletProcessor {
     // runs after the constructor
     onReady() {
-        this.players = [];
+        this.players = {};
 
-        for (let i = 0; i < playersCount; i++) {
-            this.players.push(new this.Superpowered.AdvancedAudioPlayer(this.samplerate, 2, 2, 0, 0.501, 2, false));
+        for (let i = 0; i < sampleUrls.length; i++) {
+            this.players[sampleUrls[i]] = new this.Superpowered.AdvancedAudioPlayer(this.samplerate, 2, 2, 0, 0.501, 2, false);
         }
-        SuperpoweredTrackLoader.downloadAndDecode('../A2.mp3', this);
-        SuperpoweredTrackLoader.downloadAndDecode('../gong_1.mp3', this);
+        sampleUrls.forEach((url) =>  SuperpoweredTrackLoader.downloadAndDecode(url, this) );
     }
 
     onDestruct() {
-        this.player.destruct();
+        // this.player.destruct();
     }
 
     onMessageFromMainScope(message) {
         if (message.SuperpoweredLoaded) {
-            if (message.SuperpoweredLoaded.url.includes("A2")) {
-                for (let i = 0; i < this.players.length/2; i++) {
-                    const player = this.players[i];
-                    player.openMemory(this.Superpowered.arrayBufferToWASM(message.SuperpoweredLoaded.buffer), false, false);
-                    player.loopOnEOF = true;
-                    player.playSynchronizedToPosition(i * -100);
-                    // player.play();
-                }
-            } else {
-                for (let i = Math.ceil(this.players.length/2); i < this.players.length; i++) {
-                    const player = this.players[i];
-                    player.openMemory(this.Superpowered.arrayBufferToWASM(message.SuperpoweredLoaded.buffer), false, false);
-                    player.loopOnEOF = true;
-                    player.playSynchronizedToPosition(i * -100);
-                }
+            const url = message.SuperpoweredLoaded.url
+            const player = this.players[url];
+            player.openMemory(this.Superpowered.arrayBufferToWASM(message.SuperpoweredLoaded.buffer), false, false);
+            player.loopOnEOF = true;
+            player.playSynchronizedToPosition(sampleUrls.indexOf(url) * -100);
+            player._loaded = true;
+            
+            if (Object.values(this.players).every(p => p._loaded))
                 this.sendMessageToMainScope({ loaded: true });
-            }
         }
     }
 
@@ -46,9 +58,10 @@ class MyProcessor extends SuperpoweredWebAudio.AudioWorkletProcessor {
 
         let playing = false;
 
-        for (let i = 0; i < this.players.length; i++) {
-            if (this.players[i].processStereo(outputBuffer.pointer, playing, buffersize, 1)) playing = true;
-        }
+        Object.values(this.players).forEach( player => {
+            if (player.processStereo(outputBuffer.pointer, playing, buffersize, 1)) playing = true;
+        } );
+
         if (!playing) {
             this.Superpowered.memorySet(outputBuffer.pointer, 0, buffersize * 8);
         }
