@@ -7,6 +7,7 @@ class SuperpoweredWebAudio {
     constructor(minimumSamplerate, superpowered) {
         AudioWorkletHasBrokenModuleImplementation = (navigator.userAgent.indexOf('AppleWebKit') > -1) || (navigator.userAgent.indexOf('Firefox') > -1);
         if (AudioWorkletHasBrokenModuleImplementation && (navigator.userAgent.indexOf('Chrome') > -1)) AudioWorkletHasBrokenModuleImplementation = false;
+        AudioWorkletHasBrokenModuleImplementation = true;
         this.Superpowered = superpowered;
         this.audioContext = null;
         let AudioContext = window.AudioContext || window.webkitAudioContext || false;

@@ -44,7 +44,8 @@ class MyProcessor extends SuperpoweredWebAudio.AudioWorkletProcessor {
             const player = this.players[url];
             player.openMemory(this.Superpowered.arrayBufferToWASM(message.SuperpoweredLoaded.buffer), false, false);
             player.loopOnEOF = true;
-            player.playSynchronizedToPosition(sampleUrls.indexOf(url) * -100);
+            // player.playSynchronizedToPosition(sampleUrls.indexOf(url) * -100);
+            player.play();
             player._loaded = true;
             
             if (Object.values(this.players).every(p => p._loaded))
@@ -55,6 +56,7 @@ class MyProcessor extends SuperpoweredWebAudio.AudioWorkletProcessor {
     processAudio(inputBuffer, outputBuffer, buffersize, parameters) {
         // if (!this.player.processStereo(outputBuffer.pointer, false, buffersize, 1)) this.Superpowered.memorySet(outputBuffer.pointer, 0, buffersize * 8);
         // this.distortion.process(outputBuffer.pointer, outputBuffer.pointer, buffersize);
+        var startTime = performance.now();
 
         let playing = false;
 
@@ -65,6 +67,7 @@ class MyProcessor extends SuperpoweredWebAudio.AudioWorkletProcessor {
         if (!playing) {
             this.Superpowered.memorySet(outputBuffer.pointer, 0, buffersize * 8);
         }
+        console.log(`processAudio ${playing}: ${performance.now()-startTime}`);
     }
 }
 
